@@ -1,13 +1,19 @@
-'''C register definition code generation'''
-import xml.etree.ElementTree as et
+import argparse
+import pathlib
+
+import ti_parser
 
 
-class Register:
-  pass
+def main() -> None:
+  parser = argparse.ArgumentParser(
+      description='Code generate register definitions from various definition files.')
 
+  parser.add_argument('--definition', required=True, type=pathlib.Path, help='Register definition file.')
 
-def main():
-  print(et.__name__)
+  args = parser.parse_args()
+
+  device = ti_parser.parse_device(args.definition)
+  print(device)
 
 
 if __name__ == '__main__':
