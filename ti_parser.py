@@ -38,7 +38,7 @@ def parse_register(elem: et.Element) -> Register:
       description=get_attr(elem, 'description'),
       bit_width=int(get_attr(elem, 'width')),
       address_offset=int(get_attr(elem, 'offset'), base=16),
-      bit_fields=[parse_register_bitfield(x) for x in elem.iter('bitfield')],
+      bitfields=[parse_register_bitfield(x) for x in elem.iter('bitfield')],
   )
 
 
@@ -67,12 +67,16 @@ def parse_peripheral_definition(
 
   name = get_attr(root_elem, 'id')
 
-  return PeripheralDefinition(
-      name=name,
-      description=get_attr(root_elem, 'description'),
-      registers=[parse_register(x) for x in root_elem.iter('register')],
-      instances=[parse_peripheral_instance(elem, name) for elem in instance_elems],
-  )
+  try:
+    return PeripheralDefinition(
+        name=name,
+        description=get_attr(root_elem, 'description'),
+        registers=[parse_register(x) for x in root_elem.iter('register')],
+        instances=[parse_peripheral_instance(elem, name) for elem in instance_elems],
+    )
+  except Exception as e:
+    print(f'Error while processing {path}')
+    raise e
 
 
 def parse_device(path: pathlib.Path) -> Device:
@@ -85,11 +89,15 @@ def parse_device(path: pathlib.Path) -> Device:
   for instance in cpu_elem.iter('instance'):
     instance_dict[pathlib.Path(get_attr(instance, 'href'))].append(instance)
 
-  return Device(
-      part_number=get_attr(root_elem, 'partnum'),
-      cpu_name=get_attr(cpu_elem, 'id'),
-      peripherals=[
-          parse_peripheral_definition(path.parent / periph_path, instances)
-          for periph_path, instances in instance_dict.items()
-      ],
-  )
+  try:
+    return Device(
+        part_number=get_attr(root_elem, 'partnum'),
+        cpu_name=get_attr(cpu_elem, 'id'),
+        peripherals=[
+            parse_peripheral_definition(path.parent / periph_path, instances)
+            for periph_path, instances in instance_dict.items()
+        ],
+    )
+  except Exception as e:
+    print(f'Error while processing {path}')
+    raise e
