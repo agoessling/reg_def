@@ -24,7 +24,7 @@ def parse_register_bitfield(elem: et.Element) -> RegisterBitfield:
 
   return RegisterBitfield(
       name=get_attr(elem, 'id'),
-      description=get_attr(elem, 'description'),
+      description=get_attr(elem, 'description').strip(),
       bit_offset=int(get_attr(elem, 'end')),
       bit_width=int(get_attr(elem, 'width')),
       rw_access=rw_access_mapping[get_attr(elem, 'rwaccess')],
@@ -35,7 +35,7 @@ def parse_register_bitfield(elem: et.Element) -> RegisterBitfield:
 def parse_register(elem: et.Element) -> Register:
   return Register(
       name=get_attr(elem, 'id'),
-      description=get_attr(elem, 'description'),
+      description=get_attr(elem, 'description').strip(),
       bit_width=int(get_attr(elem, 'width')),
       address_offset=int(get_attr(elem, 'offset'), base=16),
       bitfields=[parse_register_bitfield(x) for x in elem.iter('bitfield')],
@@ -70,7 +70,7 @@ def parse_peripheral_definition(
   try:
     return PeripheralDefinition(
         name=name,
-        description=get_attr(root_elem, 'description'),
+        description=get_attr(root_elem, 'description').strip(),
         registers=[parse_register(x) for x in root_elem.iter('register')],
         instances=[parse_peripheral_instance(elem, name) for elem in instance_elems],
     )
