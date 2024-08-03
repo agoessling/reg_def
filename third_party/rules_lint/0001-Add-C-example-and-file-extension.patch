@@ -1,0 +1,73 @@
+From 324eac703cd3d9b155426285ffc1278b4f2a8c97 Mon Sep 17 00:00:00 2001
+From: Andrew Goessling <agoessling@gmail.com>
+Date: Mon, 22 Jul 2024 23:03:14 -0700
+Subject: [PATCH] Add C example and file extension.
+
+---
+ example/src/BUILD.bazel  |  5 +++++
+ example/src/hello.c      | 23 +++++++++++++++++++++++
+ format/private/format.sh |  2 +-
+ 3 files changed, 29 insertions(+), 1 deletion(-)
+ create mode 100644 example/src/hello.c
+
+diff --git a/example/src/BUILD.bazel b/example/src/BUILD.bazel
+index b3bf8e0..c95c5a6 100644
+--- a/example/src/BUILD.bazel
++++ b/example/src/BUILD.bazel
+@@ -78,6 +78,11 @@ cc_binary(
+     srcs = ["hello.cpp"],
+ )
+ 
++cc_binary(
++    name = "hello_c",
++    srcs = ["hello.c"],
++)
++
+ kt_jvm_library(
+     name = "hello_kt",
+     srcs = ["hello.kt"],
+diff --git a/example/src/hello.c b/example/src/hello.c
+new file mode 100644
+index 0000000..3720fac
+--- /dev/null
++++ b/example/src/hello.c
+@@ -0,0 +1,23 @@
++#include <stdio.h>
++#include <stdlib.h>
++#include <string.h>
++
++// deliberately bad code to trigger clang-tidy warning
++int string_to_int(const char *num) { return atoi(num); }
++
++// deliberately insecure code to trigger clang-tidy warning
++void ls() { system("ls"); }
++
++static int compare(int x, int y) {
++  if (x < y)
++    ;
++  { x++; }
++  return x;
++}
++
++int main() {
++  printf("Hello, world!\n");
++  compare(3, 4);
++  char *a = NULL;
++  char *b = 0;
++}
+diff --git a/format/private/format.sh b/format/private/format.sh
+index ae6d08d..1b7e1fd 100755
+--- a/format/private/format.sh
++++ b/format/private/format.sh
+@@ -66,7 +66,7 @@ function ls-files {
+     # https://github.com/github-linguist/linguist/blob/559a6426942abcae16b6d6b328147476432bf6cb/lib/linguist/languages.yml
+     # using the ./mirror_linguist_languages.sh tool to transform to Bash code
+     case "$language" in
+-      'C++') patterns=('*.cpp' '*.c++' '*.cc' '*.cp' '*.cppm' '*.cxx' '*.h' '*.h++' '*.hh' '*.hpp' '*.hxx' '*.inc' '*.inl' '*.ino' '*.ipp' '*.ixx' '*.re' '*.tcc' '*.tpp' '*.txx') ;;
++      'C++') patterns=('*.c' '*.cpp' '*.c++' '*.cc' '*.cp' '*.cppm' '*.cxx' '*.h' '*.h++' '*.hh' '*.hpp' '*.hxx' '*.inc' '*.inl' '*.ino' '*.ipp' '*.ixx' '*.re' '*.tcc' '*.tpp' '*.txx') ;;
+       'Cuda') patterns=('*.cu' '*.cuh') ;;
+       'CSS') patterns=('*.css') ;;
+       'Go') patterns=('*.go') ;;
+-- 
+2.34.1
+

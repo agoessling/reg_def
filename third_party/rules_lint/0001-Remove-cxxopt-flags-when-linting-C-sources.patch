@@ -1,0 +1,49 @@
+From 0c05366557eb75b1a8d6a6cbe304e6decd062da2 Mon Sep 17 00:00:00 2001
+From: Andrew Goessling <agoessling@gmail.com>
+Date: Sat, 3 Aug 2024 21:13:55 -0700
+Subject: [PATCH] Remove cxxopt flags when linting C sources.
+
+---
+ lint/clang_tidy.bzl | 11 +++++++----
+ 1 file changed, 7 insertions(+), 4 deletions(-)
+
+diff --git a/lint/clang_tidy.bzl b/lint/clang_tidy.bzl
+index d3cc052..43009cf 100644
+--- a/lint/clang_tidy.bzl
++++ b/lint/clang_tidy.bzl
+@@ -49,7 +49,7 @@ def _gather_inputs(ctx, compilation_context, srcs):
+         inputs.append(ctx.files._global_config[0])
+     return inputs
+ 
+-def _toolchain_flags(ctx, action_name = ACTION_NAMES.cpp_compile):
++def _toolchain_flags(ctx, user_flags, action_name = ACTION_NAMES.cpp_compile):
+     cc_toolchain = find_cpp_toolchain(ctx)
+     feature_configuration = cc_common.configure_features(
+         ctx = ctx,
+@@ -58,7 +58,7 @@ def _toolchain_flags(ctx, action_name = ACTION_NAMES.cpp_compile):
+     compile_variables = cc_common.create_compile_variables(
+         feature_configuration = feature_configuration,
+         cc_toolchain = cc_toolchain,
+-        user_compile_flags = ctx.fragments.cpp.cxxopts + ctx.fragments.cpp.copts,
++        user_compile_flags = user_flags,
+     )
+     flags = cc_common.get_memory_inefficient_command_line(
+         feature_configuration = feature_configuration,
+@@ -200,9 +200,12 @@ def _get_args(ctx, compilation_context, srcs):
+     rule_flags = ctx.rule.attr.copts if hasattr(ctx.rule.attr, "copts") else []
+     sources_are_cxx = _is_cxx(srcs[0])
+     if (sources_are_cxx):
+-        args.extend(_safe_flags(ctx, _toolchain_flags(ctx, ACTION_NAMES.cpp_compile) + rule_flags) + ["-xc++"])
++        user_flags = ctx.fragments.cpp.cxxopts + ctx.fragments.cpp.copts
++        args.extend(_safe_flags(ctx, _toolchain_flags(ctx, user_flags, ACTION_NAMES.cpp_compile) + rule_flags) + ["-xc++"])
+     else:
+-        args.extend(_safe_flags(ctx, _toolchain_flags(ctx, ACTION_NAMES.c_compile) + rule_flags) + ["-xc"])
++        user_flags = ctx.fragments.cpp.copts
++        args.extend(_safe_flags(ctx, _toolchain_flags(ctx, user_flags, ACTION_NAMES.c_compile) + rule_flags) + ["-xc"])
++    print(args)
+ 
+     # add defines
+     for define in compilation_context.defines.to_list():
+-- 
+2.34.1
+

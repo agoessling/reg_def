@@ -1,0 +1,158 @@
+From 324eac703cd3d9b155426285ffc1278b4f2a8c97 Mon Sep 17 00:00:00 2001
+From: Andrew Goessling <agoessling@gmail.com>
+Date: Mon, 22 Jul 2024 23:03:14 -0700
+Subject: [PATCH 1/3] Add C example and file extension.
+
+---
+ example/src/BUILD.bazel  |  5 +++++
+ example/src/hello.c      | 23 +++++++++++++++++++++++
+ format/private/format.sh |  2 +-
+ 3 files changed, 29 insertions(+), 1 deletion(-)
+ create mode 100644 example/src/hello.c
+
+diff --git a/example/src/BUILD.bazel b/example/src/BUILD.bazel
+index b3bf8e0..c95c5a6 100644
+--- a/example/src/BUILD.bazel
++++ b/example/src/BUILD.bazel
+@@ -78,6 +78,11 @@ cc_binary(
+     srcs = ["hello.cpp"],
+ )
+ 
++cc_binary(
++    name = "hello_c",
++    srcs = ["hello.c"],
++)
++
+ kt_jvm_library(
+     name = "hello_kt",
+     srcs = ["hello.kt"],
+diff --git a/example/src/hello.c b/example/src/hello.c
+new file mode 100644
+index 0000000..3720fac
+--- /dev/null
++++ b/example/src/hello.c
+@@ -0,0 +1,23 @@
++#include <stdio.h>
++#include <stdlib.h>
++#include <string.h>
++
++// deliberately bad code to trigger clang-tidy warning
++int string_to_int(const char *num) { return atoi(num); }
++
++// deliberately insecure code to trigger clang-tidy warning
++void ls() { system("ls"); }
++
++static int compare(int x, int y) {
++  if (x < y)
++    ;
++  { x++; }
++  return x;
++}
++
++int main() {
++  printf("Hello, world!\n");
++  compare(3, 4);
++  char *a = NULL;
++  char *b = 0;
++}
+diff --git a/format/private/format.sh b/format/private/format.sh
+index ae6d08d..1b7e1fd 100755
+--- a/format/private/format.sh
++++ b/format/private/format.sh
+@@ -66,7 +66,7 @@ function ls-files {
+     # https://github.com/github-linguist/linguist/blob/559a6426942abcae16b6d6b328147476432bf6cb/lib/linguist/languages.yml
+     # using the ./mirror_linguist_languages.sh tool to transform to Bash code
+     case "$language" in
+-      'C++') patterns=('*.cpp' '*.c++' '*.cc' '*.cp' '*.cppm' '*.cxx' '*.h' '*.h++' '*.hh' '*.hpp' '*.hxx' '*.inc' '*.inl' '*.ino' '*.ipp' '*.ixx' '*.re' '*.tcc' '*.tpp' '*.txx') ;;
++      'C++') patterns=('*.c' '*.cpp' '*.c++' '*.cc' '*.cp' '*.cppm' '*.cxx' '*.h' '*.h++' '*.hh' '*.hpp' '*.hxx' '*.inc' '*.inl' '*.ino' '*.ipp' '*.ixx' '*.re' '*.tcc' '*.tpp' '*.txx') ;;
+       'Cuda') patterns=('*.cu' '*.cuh') ;;
+       'CSS') patterns=('*.css') ;;
+       'Go') patterns=('*.go') ;;
+-- 
+2.34.1
+
+From 501b966c4fe26d7505f88bc343ac4ba1c5716f71 Mon Sep 17 00:00:00 2001
+From: Andrew Goessling <agoessling@gmail.com>
+Date: Sun, 4 Aug 2024 10:06:10 -0700
+Subject: [PATCH 2/3] First class support for C formatting.
+
+---
+ example/tools/format/BUILD.bazel    | 1 +
+ format/private/format.sh            | 3 ++-
+ format/private/formatter_binary.bzl | 1 +
+ 3 files changed, 4 insertions(+), 1 deletion(-)
+
+diff --git a/example/tools/format/BUILD.bazel b/example/tools/format/BUILD.bazel
+index 83a1b19..a6f4493 100644
+--- a/example/tools/format/BUILD.bazel
++++ b/example/tools/format/BUILD.bazel
+@@ -57,6 +57,7 @@ java_binary(
+ 
+ format_multirun(
+     name = "format",
++    c = "@llvm_toolchain_llvm//:bin/clang-format",
+     cc = "@llvm_toolchain_llvm//:bin/clang-format",
+     css = ":prettier",
+     cuda = "@llvm_toolchain_llvm//:bin/clang-format",
+diff --git a/format/private/format.sh b/format/private/format.sh
+index 1b7e1fd..e67e376 100755
+--- a/format/private/format.sh
++++ b/format/private/format.sh
+@@ -66,7 +66,8 @@ function ls-files {
+     # https://github.com/github-linguist/linguist/blob/559a6426942abcae16b6d6b328147476432bf6cb/lib/linguist/languages.yml
+     # using the ./mirror_linguist_languages.sh tool to transform to Bash code
+     case "$language" in
+-      'C++') patterns=('*.c' '*.cpp' '*.c++' '*.cc' '*.cp' '*.cppm' '*.cxx' '*.h' '*.h++' '*.hh' '*.hpp' '*.hxx' '*.inc' '*.inl' '*.ino' '*.ipp' '*.ixx' '*.re' '*.tcc' '*.tpp' '*.txx') ;;
++      'C') patterns=('*.c' '*.cats' '*.h' '*.idc') ;;
++      'C++') patterns=('*.cpp' '*.c++' '*.cc' '*.cp' '*.cppm' '*.cxx' '*.h' '*.h++' '*.hh' '*.hpp' '*.hxx' '*.inc' '*.inl' '*.ino' '*.ipp' '*.ixx' '*.re' '*.tcc' '*.tpp' '*.txx') ;;
+       'Cuda') patterns=('*.cu' '*.cuh') ;;
+       'CSS') patterns=('*.css') ;;
+       'Go') patterns=('*.go') ;;
+diff --git a/format/private/formatter_binary.bzl b/format/private/formatter_binary.bzl
+index 33ef7f6..2b32da3 100644
+--- a/format/private/formatter_binary.bzl
++++ b/format/private/formatter_binary.bzl
+@@ -21,6 +21,7 @@ TOOLS = {
+     "SQL": "prettier",
+     "Shell": "shfmt",
+     "Protocol Buffer": "buf",
++    "C": "clang-format",
+     "C++": "clang-format",
+     "Cuda": "clang-format",
+     "YAML": "yamlfmt",
+-- 
+2.34.1
+
+From e923d9935e00271d8368d0ce9e0343aacafed94f Mon Sep 17 00:00:00 2001
+From: Andrew Goessling <agoessling@gmail.com>
+Date: Sun, 4 Aug 2024 10:25:48 -0700
+Subject: [PATCH 3/3] Update starlark docs.
+
+---
+ docs/format.md | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/docs/format.md b/docs/format.md
+index 0ab2dba..1279ea8 100644
+--- a/docs/format.md
++++ b/docs/format.md
+@@ -47,7 +47,7 @@ format_multirun(
+ ## languages
+ 
+ <pre>
+-languages(<a href="#languages-name">name</a>, <a href="#languages-cc">cc</a>, <a href="#languages-css">css</a>, <a href="#languages-cuda">cuda</a>, <a href="#languages-go">go</a>, <a href="#languages-graphql">graphql</a>, <a href="#languages-html">html</a>, <a href="#languages-java">java</a>, <a href="#languages-javascript">javascript</a>, <a href="#languages-jsonnet">jsonnet</a>, <a href="#languages-kotlin">kotlin</a>, <a href="#languages-markdown">markdown</a>,
++languages(<a href="#languages-name">name</a>, <a href="#languages-c">c</a>, <a href="#languages-cc">cc</a>, <a href="#languages-css">css</a>, <a href="#languages-cuda">cuda</a>, <a href="#languages-go">go</a>, <a href="#languages-graphql">graphql</a>, <a href="#languages-html">html</a>, <a href="#languages-java">java</a>, <a href="#languages-javascript">javascript</a>, <a href="#languages-jsonnet">jsonnet</a>, <a href="#languages-kotlin">kotlin</a>, <a href="#languages-markdown">markdown</a>,
+           <a href="#languages-protocol_buffer">protocol_buffer</a>, <a href="#languages-python">python</a>, <a href="#languages-rust">rust</a>, <a href="#languages-scala">scala</a>, <a href="#languages-shell">shell</a>, <a href="#languages-sql">sql</a>, <a href="#languages-starlark">starlark</a>, <a href="#languages-swift">swift</a>, <a href="#languages-terraform">terraform</a>, <a href="#languages-yaml">yaml</a>)
+ </pre>
+ 
+@@ -70,6 +70,7 @@ Some languages have dialects:
+ | Name  | Description | Type | Mandatory | Default |
+ | :------------- | :------------- | :------------- | :------------- | :------------- |
+ | <a id="languages-name"></a>name |  A unique name for this target.   | <a href="https://bazel.build/concepts/labels#target-names">Name</a> | required |  |
++| <a id="languages-c"></a>c |  a <code>clang-format</code> binary, or any other tool that has a matching command-line interface.   | <a href="https://bazel.build/concepts/labels">Label</a> | optional | <code>None</code> |
+ | <a id="languages-cc"></a>cc |  a <code>clang-format</code> binary, or any other tool that has a matching command-line interface.   | <a href="https://bazel.build/concepts/labels">Label</a> | optional | <code>None</code> |
+ | <a id="languages-css"></a>css |  a <code>prettier</code> binary, or any other tool that has a matching command-line interface.   | <a href="https://bazel.build/concepts/labels">Label</a> | optional | <code>None</code> |
+ | <a id="languages-cuda"></a>cuda |  a <code>clang-format</code> binary, or any other tool that has a matching command-line interface.   | <a href="https://bazel.build/concepts/labels">Label</a> | optional | <code>None</code> |
+-- 
+2.34.1
+

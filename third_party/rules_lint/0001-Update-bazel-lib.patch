@@ -1,0 +1,37 @@
+From a79cd0724a91f259ace250374f6aa82a6c2c27b3 Mon Sep 17 00:00:00 2001
+From: Andrew Goessling <agoessling@gmail.com>
+Date: Wed, 24 Jul 2024 00:44:40 -0700
+Subject: [PATCH] Update bazel-lib.
+
+---
+ MODULE.bazel | 8 +-------
+ 1 file changed, 1 insertion(+), 7 deletions(-)
+
+diff --git a/MODULE.bazel b/MODULE.bazel
+index 7727f6e..55241ab 100644
+--- a/MODULE.bazel
++++ b/MODULE.bazel
+@@ -6,7 +6,7 @@ module(
+     compatibility_level = 1,
+ )
+ 
+-bazel_dep(name = "aspect_bazel_lib", version = "2.5.0")
++bazel_dep(name = "aspect_bazel_lib", version = "2.7.9")
+ 
+ # Needed in the root because we use js_lib_helpers in our aspect impl
+ # Minimum version needs 'chore: bump bazel-lib to 2.0 by @alexeagle in #1311'
+@@ -29,11 +29,5 @@ multitool.hub(lockfile = "//format:multitool.lock.json")
+ multitool.hub(lockfile = "//lint:multitool.lock.json")
+ use_repo(multitool, "multitool")
+ 
+-# Locally, use newer bazel-lib for stardoc
+-single_version_override(
+-    module_name = "aspect_bazel_lib",
+-    version = "2.7.7",
+-)
+-
+ # 0.5.4 is the first version with bzlmod support
+ bazel_dep(name = "stardoc", version = "0.5.4", dev_dependency = True, repo_name = "io_bazel_stardoc")
+-- 
+2.34.1
+
