@@ -1,10 +1,13 @@
-module(name = "reg_def", version = "0.1.0")
+module(
+    name = "reg_def",
+    version = "0.1.0",
+)
 
 bazel_dep(name = "lint_it_all", version = "0.0.0")
 git_override(
     module_name = "lint_it_all",
-    remote = "https://github.com/agoessling/lint_it_all.git",
     commit = "15209d6476ddf81173e38f609ca6d9df3afa92eb",
+    remote = "https://github.com/agoessling/lint_it_all.git",
 )
 
 # BEGIN ==================== lint_it_all ====================
@@ -40,11 +43,10 @@ lia_http_archive(
 )
 
 bazel_dep(name = "buildifier_prebuilt", version = "6.4.0", dev_dependency = True)
-
 bazel_dep(name = "hedron_compile_commands", dev_dependency = True)
 git_override(
     module_name = "hedron_compile_commands",
-    remote = "https://github.com/hedronvision/bazel-compile-commands-extractor.git",
     commit = "1e08f8e0507b6b6b1f4416a9a22cf5c28beaba93",
+    remote = "https://github.com/hedronvision/bazel-compile-commands-extractor.git",
 )
 # END ==================== lint_it_all ====================

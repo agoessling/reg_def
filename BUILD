@@ -3,8 +3,8 @@ py_binary(
     srcs = ["reg_def.py"],
     visibility = ["//visibility:public"],
     deps = [
-        ":ti_parser",
         ":c_generator",
+        ":ti_parser",
     ],
 )
 
@@ -27,20 +27,20 @@ py_library(
 
 genrule(
     name = "gen_test_header",
-    tools = [":reg_def"],
     outs = ["test_header.h"],
     cmd = "$(location :reg_def) --definition /home/agoessling/ti/ccs1271/ccs/ccs_base/common/targetdb/devices/cc1354p10.xml --output $@",
+    tools = [":reg_def"],
 )
 
 cc_library(
-   name = "test_header",
-   hdrs = ["test_header.h"],
+    name = "test_header",
+    hdrs = ["test_header.h"],
 )
 
 cc_binary(
-   name = "test_main",
-   srcs = ["test_main.c"],
-   deps = [":test_header"],
+    name = "test_main",
+    srcs = ["test_main.c"],
+    deps = [":test_header"],
 )
 
 # BEGIN ==================== lint_it_all ====================
