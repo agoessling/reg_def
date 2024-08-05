@@ -1,14 +1,9 @@
 Checks: >
   *,
-  abseil-*,
-  bugprone-*,
-  google-*,
-  misc-*,
-  modernize-*,
-  performance-*,
-  portability-*,
-  readability-*,
+  -llvmlibc-*,
+  -clang-diagnostic-builtin-macro-redefined,
+  -clang-diagnostic-unused-command-line-argument,
 
 WarningsAsErrors: "*"
-
+SystemHeaders: false
 UseColor: true

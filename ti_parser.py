@@ -1,25 +1,28 @@
-from collections import defaultdict
+"""Parse TI XML device description format."""
+
 import pathlib
 import xml.etree.ElementTree as et
+from collections import defaultdict
 
 from device_types import (
-    RwAccess,
     Device,
-    PeripheralInstance,
     PeripheralDefinition,
+    PeripheralInstance,
     Register,
     RegisterBitfield,
+    RwAccess,
 )
 
 
-def get_attr(element: et.Element, attr: str) -> str:
+def _get_attr(element: et.Element, attr: str) -> str:
     val = element.get(attr)
     if val is None:
-        raise KeyError(f'No attribute "{attr}" in {element.tag}')
+        msg = f'No attribute "{attr}" in {element.tag}'
+        raise KeyError(msg)
     return val
 
 
-def parse_register_bitfield(elem: et.Element) -> RegisterBitfield:
+def _parse_register_bitfield(elem: et.Element) -> RegisterBitfield:
     rw_access_mapping = {
         "R": RwAccess.RO,
         "RO": RwAccess.RO,
@@ -30,27 +33,27 @@ def parse_register_bitfield(elem: et.Element) -> RegisterBitfield:
     }
 
     return RegisterBitfield(
-        name=get_attr(elem, "id"),
-        description=get_attr(elem, "description").strip(),
-        bit_offset=int(get_attr(elem, "end")),
-        bit_width=int(get_attr(elem, "width")),
-        rw_access=rw_access_mapping[get_attr(elem, "rwaccess")],
-        reset_value=int(get_attr(elem, "resetval"), base=16),
+        name=_get_attr(elem, "id"),
+        description=_get_attr(elem, "description").strip(),
+        bit_offset=int(_get_attr(elem, "end")),
+        bit_width=int(_get_attr(elem, "width")),
+        rw_access=rw_access_mapping[_get_attr(elem, "rwaccess")],
+        reset_value=int(_get_attr(elem, "resetval"), base=16),
     )
 
 
-def parse_register(elem: et.Element) -> Register:
+def _parse_register(elem: et.Element) -> Register:
     return Register(
-        name=get_attr(elem, "id"),
-        description=get_attr(elem, "description").strip(),
-        bit_width=int(get_attr(elem, "width")),
-        address_offset=int(get_attr(elem, "offset"), base=16),
-        bitfields=[parse_register_bitfield(x) for x in elem.iter("bitfield")],
+        name=_get_attr(elem, "id"),
+        description=_get_attr(elem, "description").strip(),
+        bit_width=int(_get_attr(elem, "width")),
+        address_offset=int(_get_attr(elem, "offset"), base=16),
+        bitfields=[_parse_register_bitfield(x) for x in elem.iter("bitfield")],
     )
 
 
-def parse_peripheral_instance(elem: et.Element, definition_name: str) -> PeripheralInstance:
-    name = get_attr(elem, "id")
+def _parse_peripheral_instance(elem: et.Element, definition_name: str) -> PeripheralInstance:
+    name = _get_attr(elem, "id")
 
     try:
         index = int(name.removeprefix(definition_name))
@@ -60,33 +63,34 @@ def parse_peripheral_instance(elem: et.Element, definition_name: str) -> Periphe
     return PeripheralInstance(
         name=name,
         index=index,
-        address=int(get_attr(elem, "baseaddr"), base=16),
-        size=int(get_attr(elem, "size"), base=16),
+        address=int(_get_attr(elem, "baseaddr"), base=16),
+        size=int(_get_attr(elem, "size"), base=16),
     )
 
 
-def parse_peripheral_definition(
+def _parse_peripheral_definition(
     path: pathlib.Path,
     instance_elems: list[et.Element],
 ) -> PeripheralDefinition:
     tree = et.parse(path)
     root_elem = tree.getroot()
 
-    name = get_attr(root_elem, "id")
+    name = _get_attr(root_elem, "id")
 
     try:
         return PeripheralDefinition(
             name=name,
-            description=get_attr(root_elem, "description").strip(),
-            registers=[parse_register(x) for x in root_elem.iter("register")],
-            instances=[parse_peripheral_instance(elem, name) for elem in instance_elems],
+            description=_get_attr(root_elem, "description").strip(),
+            registers=[_parse_register(x) for x in root_elem.iter("register")],
+            instances=[_parse_peripheral_instance(elem, name) for elem in instance_elems],
         )
-    except Exception as e:
+    except Exception:
         print(f"Error while processing {path}")
-        raise e
+        raise
 
 
 def parse_device(path: pathlib.Path) -> Device:
+    """Parse device from XML definition."""
     tree = et.parse(path)
     root_elem = tree.getroot()
 
@@ -94,17 +98,17 @@ def parse_device(path: pathlib.Path) -> Device:
 
     instance_dict: defaultdict[pathlib.Path, list[et.Element]] = defaultdict(list)
     for instance in cpu_elem.iter("instance"):
-        instance_dict[pathlib.Path(get_attr(instance, "href"))].append(instance)
+        instance_dict[pathlib.Path(_get_attr(instance, "href"))].append(instance)
 
     try:
         return Device(
-            part_number=get_attr(root_elem, "partnum"),
-            cpu_name=get_attr(cpu_elem, "id"),
+            part_number=_get_attr(root_elem, "partnum"),
+            cpu_name=_get_attr(cpu_elem, "id"),
             peripherals=[
-                parse_peripheral_definition(path.parent / periph_path, instances)
+                _parse_peripheral_definition(path.parent / periph_path, instances)
                 for periph_path, instances in instance_dict.items()
             ],
         )
-    except Exception as e:
+    except Exception:
         print(f"Error while processing {path}")
-        raise e
+        raise

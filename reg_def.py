@@ -1,3 +1,5 @@
+"""Generate device register definitions."""
+
 import argparse
 import pathlib
 
@@ -6,6 +8,7 @@ import ti_parser
 
 
 def main() -> None:
+    """Execute the name function."""
     parser = argparse.ArgumentParser(
         description="Code generate register definitions from various definition files."
     )

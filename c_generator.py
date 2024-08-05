@@ -1,11 +1,13 @@
-from collections import defaultdict
+"""Generate C header from device definition."""
+
 import pathlib
 import textwrap
+from collections import defaultdict
 
 from device_types import Device, PeripheralDefinition, Register
 
 
-def type_from_bits(bit_width: int) -> str:
+def _type_from_bits(bit_width: int) -> str:
     if bit_width <= 8:
         return "uint8_t"
     if bit_width <= 16:
@@ -14,22 +16,11 @@ def type_from_bits(bit_width: int) -> str:
         return "uint32_t"
     if bit_width <= 64:
         return "uint64_t"
-    raise ValueError(f"Bit width ({bit_width}) too large.")
+    msg = f"Bit width ({bit_width}) too large."
+    raise ValueError(msg)
 
 
-def type_from_bytes(bytes: int) -> str:
-    if bytes <= 1:
-        return "uint8_t"
-    if bytes <= 2:
-        return "uint16_t"
-    if bytes <= 4:
-        return "uint32_t"
-    if bytes <= 8:
-        return "uint64_t"
-    raise ValueError(f"Bytes ({bytes}) too large.")
-
-
-def bytes_from_bits(bit_width: int) -> int:
+def _bytes_from_bits(bit_width: int) -> int:
     if bit_width == 8:
         return 1
     if bit_width == 16:
@@ -38,21 +29,22 @@ def bytes_from_bits(bit_width: int) -> int:
         return 4
     if bit_width == 64:
         return 8
-    raise ValueError(f"Incompatible bits ({bit_width}) for bytes.")
+    msg = f"Incompatible bits ({bit_width}) for bytes."
+    raise ValueError(msg)
 
 
-def capitalize_sentence(text: str) -> str:
+def _capitalize_sentence(text: str) -> str:
     return text[0:1].upper() + text[1:]
 
 
-def wrap_comment(text: str, indent: str = "", width: int = 100) -> str:
+def _wrap_comment(text: str, indent: str = "", width: int = 100) -> str:
     indent = indent + "// "
     return textwrap.fill(
-        capitalize_sentence(text), width=width, initial_indent=indent, subsequent_indent=indent
+        _capitalize_sentence(text), width=width, initial_indent=indent, subsequent_indent=indent
     )
 
 
-def get_header_header(device: Device) -> str:
+def _get_header_header(device: Device) -> str:
     return f"""\
 #pragma once
 
@@ -64,9 +56,9 @@ def get_header_header(device: Device) -> str:
 // CPU: {device.cpu_name}"""
 
 
-def get_bitfield_definition(register: Register) -> str:
+def _get_bitfield_definition(register: Register) -> str:
     bitfield_listings = []
-    data_type = type_from_bits(register.bit_width)
+    data_type = _type_from_bits(register.bit_width)
 
     offset = 0
     unused_counter = 0
@@ -78,7 +70,7 @@ def get_bitfield_definition(register: Register) -> str:
             )
             unused_counter += 1
 
-        bitfield_listings.append(wrap_comment(bitfield.description, " " * 2, 98))
+        bitfield_listings.append(_wrap_comment(bitfield.description, " " * 2, 98))
         bitfield_listings.append(f"  {data_type} {bitfield.name.upper()} : {bitfield.bit_width};")
 
         offset = bitfield.bit_offset + bitfield.bit_width
@@ -97,34 +89,32 @@ struct {{
 }};"""
 
 
-def get_register_typedef(peripheral: PeripheralDefinition, register: Register) -> str:
+def _get_register_typedef(peripheral: PeripheralDefinition, register: Register) -> str:
     return f"{peripheral.name.capitalize()}{register.name.capitalize()}RegDef"
 
 
-def get_register_definition(peripheral: PeripheralDefinition, register: Register) -> str:
-    data_type = type_from_bits(register.bit_width)
-    data_bytes = bytes_from_bits(register.bit_width)
-    typedef_name = get_register_typedef(peripheral, register)
+def _get_register_definition(peripheral: PeripheralDefinition, register: Register) -> str:
+    data_type = _type_from_bits(register.bit_width)
+    data_bytes = _bytes_from_bits(register.bit_width)
+    typedef_name = _get_register_typedef(peripheral, register)
 
-    s = f"""\
+    return f"""\
 // {peripheral.name.upper()} {register.name.upper()} register definition.
-{wrap_comment(peripheral.description)}
+{_wrap_comment(peripheral.description)}
 typedef union {{
-{textwrap.indent(get_bitfield_definition(register), '  ')}
+{textwrap.indent(_get_bitfield_definition(register), '  ')}
   {data_type} raw;  // Entire register as raw {data_type}.
 }} {typedef_name};
 
 static_assert(sizeof({typedef_name}) == {data_bytes});"""
 
-    return s
 
-
-def get_peripheral_typedef(peripheral: PeripheralDefinition) -> str:
+def _get_peripheral_typedef(peripheral: PeripheralDefinition) -> str:
     return f"{peripheral.name.capitalize()}PeriphDef"
 
 
-def get_peripheral_struct(peripheral: PeripheralDefinition) -> str:
-    peripheral_typedef = get_peripheral_typedef(peripheral)
+def _get_peripheral_struct(peripheral: PeripheralDefinition) -> str:
+    peripheral_typedef = _get_peripheral_typedef(peripheral)
 
     fields = []
     asserts = []
@@ -150,9 +140,9 @@ def get_peripheral_struct(peripheral: PeripheralDefinition) -> str:
             unused_counter += 1
 
         if len(reg_list) == 1:
-            fields.append(wrap_comment(reg_list[0].description, " " * 2))
+            fields.append(_wrap_comment(reg_list[0].description, " " * 2))
             fields.append(
-                f"  {get_register_typedef(peripheral, reg_list[0])} {reg_list[0].name.upper()};"
+                f"  {_get_register_typedef(peripheral, reg_list[0])} {reg_list[0].name.upper()};"
             )
             asserts.append(
                 f"static_assert(offsetof({peripheral_typedef}, {reg_list[0].name.upper()})"
@@ -162,9 +152,9 @@ def get_peripheral_struct(peripheral: PeripheralDefinition) -> str:
         else:
             union_fields = []
             for register in reg_list:
-                union_fields.append(wrap_comment(register.description, " " * 4))
+                union_fields.append(_wrap_comment(register.description, " " * 4))
                 union_fields.append(
-                    f"    {get_register_typedef(peripheral, register)} {register.name.upper()};"
+                    f"    {_get_register_typedef(peripheral, register)} {register.name.upper()};"
                 )
                 asserts.append(
                     f"static_assert(offsetof({peripheral_typedef}, {register.name.upper()})"
@@ -178,7 +168,7 @@ def get_peripheral_struct(peripheral: PeripheralDefinition) -> str:
 {union_block}
   }};""")
 
-        offset = reg_offset + bytes_from_bits(reg_list[0].bit_width)
+        offset = reg_offset + _bytes_from_bits(reg_list[0].bit_width)
 
     if peripheral.instances and offset < peripheral.instances[0].size:
         unused_size = peripheral.instances[0].size - offset
@@ -195,9 +185,9 @@ typedef struct {{
 {assert_block}"""
 
 
-def get_peripheral_definition(peripheral: PeripheralDefinition) -> str:
+def _get_peripheral_definition(peripheral: PeripheralDefinition) -> str:
     register_listing = "\n\n".join(
-        get_register_definition(peripheral, r) for r in peripheral.registers
+        _get_register_definition(peripheral, r) for r in peripheral.registers
     )
 
     return f"""\
@@ -205,12 +195,13 @@ def get_peripheral_definition(peripheral: PeripheralDefinition) -> str:
 
 {register_listing}
 
-{get_peripheral_struct(peripheral)}"""
+{_get_peripheral_struct(peripheral)}"""
 
 
-def get_peripheral_instances(peripheral: PeripheralDefinition) -> str:
+def _get_peripheral_instances(peripheral: PeripheralDefinition) -> str:
     define_block = "\n".join(
-        f"#define {inst.name.upper()} (*((volatile {get_peripheral_typedef(peripheral)}*){inst.address:#010x}))"
+        f"#define {inst.name.upper()} "
+        f"(*((volatile {_get_peripheral_typedef(peripheral)}*){inst.address:#010x}))"
         for inst in peripheral.instances
     )
     return f"""\
@@ -218,14 +209,15 @@ def get_peripheral_instances(peripheral: PeripheralDefinition) -> str:
 
 
 def generate_header(path: pathlib.Path, device: Device) -> None:
+    """Write C header to file from device definition."""
     with path.open("w") as f:
-        f.write(get_header_header(device))
+        f.write(_get_header_header(device))
         f.write("\n\n")
 
-        peripheral_definitions = [get_peripheral_definition(p) for p in device.peripherals]
+        peripheral_definitions = [_get_peripheral_definition(p) for p in device.peripherals]
         f.write("\n\n".join(peripheral_definitions))
 
         f.write("\n\n")
 
-        instances = [get_peripheral_instances(p) for p in device.peripherals]
+        instances = [_get_peripheral_instances(p) for p in device.peripherals]
         f.write("\n\n".join(instances))
