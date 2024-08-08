@@ -1,6 +1,7 @@
 """Generate C header from device definition."""
 
 import pathlib
+import re
 import textwrap
 from collections import defaultdict
 
@@ -31,6 +32,19 @@ def _bytes_from_bits(bit_width: int) -> int:
         return 8
     msg = f"Incompatible bits ({bit_width}) for bytes."
     raise ValueError(msg)
+
+
+def _to_camel_case(text: str) -> str:
+    orig_words = re.split("[_ ]", text)
+
+    output_words = []
+    for word in orig_words:
+        if word.isupper():
+            output_words.append(word[:1].upper() + word[1:].lower())
+            continue
+        output_words.append(word[:1].upper() + word[1:])
+
+    return "".join(output_words)
 
 
 def _capitalize_sentence(text: str) -> str:
@@ -90,7 +104,7 @@ struct {{
 
 
 def _get_register_typedef(peripheral: PeripheralDefinition, register: Register) -> str:
-    return f"{peripheral.name.capitalize()}{register.name.capitalize()}RegDef"
+    return f"{_to_camel_case(peripheral.name)}{_to_camel_case(register.name)}RegDef"
 
 
 def _get_register_definition(peripheral: PeripheralDefinition, register: Register) -> str:
@@ -110,7 +124,7 @@ static_assert(sizeof({typedef_name}) == {data_bytes});"""
 
 
 def _get_peripheral_typedef(peripheral: PeripheralDefinition) -> str:
-    return f"{peripheral.name.capitalize()}PeriphDef"
+    return f"{_to_camel_case(peripheral.name)}PeriphDef"
 
 
 def _get_peripheral_struct(peripheral: PeripheralDefinition) -> str:
@@ -195,17 +209,36 @@ def _get_peripheral_definition(peripheral: PeripheralDefinition) -> str:
 
 {register_listing}
 
+{_wrap_comment(peripheral.description)}
 {_get_peripheral_struct(peripheral)}"""
 
 
 def _get_peripheral_instances(peripheral: PeripheralDefinition) -> str:
-    define_block = "\n".join(
-        f"#define {inst.name.upper()} "
-        f"(*((volatile {_get_peripheral_typedef(peripheral)}*){inst.address:#010x}))"
+    instance_defs = "\n".join(
+        f"{_wrap_comment(peripheral.description)}\n"
+        f"static volatile {_get_peripheral_typedef(peripheral)} *const {inst.name.upper()} "
+        f"= (volatile {_get_peripheral_typedef(peripheral)} *){inst.address:#010x};"
         for inst in peripheral.instances
     )
-    return f"""\
-{define_block}"""
+
+    array_def = ""
+    if len(peripheral.instances) > 1 and all(
+        inst.index is not None for inst in peripheral.instances
+    ):
+        array_elems = []
+        for instance in peripheral.instances:
+            while len(array_elems) < instance.index:  # pyright: ignore[reportOperatorIssue]
+                array_elems.append("NULL")
+            array_elems.append(instance.name.upper())
+        elems_string = ",\n".join(array_elems)
+        array_def = (
+            f"\n\n{_wrap_comment(peripheral.description)}\n"
+            f"static volatile {_get_peripheral_typedef(peripheral)} *const "
+            f"{peripheral.name.upper()}[{len(peripheral.instances)}] = {{\n"
+            f"{textwrap.indent(elems_string, ' ' * 4)},\n}};"
+        )
+
+    return instance_defs + array_def
 
 
 def generate_header(path: pathlib.Path, device: Device) -> None:
@@ -219,5 +252,6 @@ def generate_header(path: pathlib.Path, device: Device) -> None:
 
         f.write("\n\n")
 
+        f.write("// Peripheral instance definitions.\n\n")
         instances = [_get_peripheral_instances(p) for p in device.peripherals]
         f.write("\n\n".join(instances))
