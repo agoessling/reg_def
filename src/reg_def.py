@@ -3,8 +3,7 @@
 import argparse
 import pathlib
 
-import c_generator
-import ti_parser
+from src import c_generator, ti_parser
 
 
 def main() -> None:
@@ -13,14 +12,18 @@ def main() -> None:
         description="Code generate register definitions from various definition files."
     )
 
-    parser.add_argument(
-        "--definition", required=True, type=pathlib.Path, help="Register definition file."
-    )
+    definition_group = parser.add_mutually_exclusive_group(required=True)
+
+    definition_group.add_argument("--ti_xml", type=pathlib.Path, help="TI XML definition file.")
+
     parser.add_argument("--output", required=True, type=pathlib.Path, help="Generated header file.")
 
     args = parser.parse_args()
 
-    device = ti_parser.parse_device(args.definition)
+    if args.ti_xml:
+        device = ti_parser.parse_device(args.ti_xml)
+    else:
+        raise RuntimeError
 
     c_generator.generate_header(args.output, device)
 

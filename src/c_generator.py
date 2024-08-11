@@ -5,7 +5,7 @@ import re
 import textwrap
 from collections import defaultdict
 
-from device_types import Device, PeripheralDefinition, Register
+from src.device_types import Device, PeripheralDefinition, Register
 
 
 def _type_from_bits(bit_width: int) -> str:

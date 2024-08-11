@@ -4,7 +4,7 @@ import pathlib
 import xml.etree.ElementTree as et
 from collections import defaultdict
 
-from device_types import (
+from src.device_types import (
     Device,
     PeripheralDefinition,
     PeripheralInstance,
@@ -32,11 +32,23 @@ def _parse_register_bitfield(elem: et.Element) -> RegisterBitfield:
         "RW": RwAccess.RW,
     }
 
+    name = _get_attr(elem, "id")
+    bit_offset = int(_get_attr(elem, "end"))
+    bit_width = int(_get_attr(elem, "width"))
+    bit_end = int(_get_attr(elem, "begin"))
+
+    if bit_end - bit_offset != bit_width - 1:
+        msg = (
+            f"Mismatch between begin: {bit_end}, width: {bit_width}, and end: {bit_offset} "
+            f"in {name}."
+        )
+        raise ValueError(msg)
+
     return RegisterBitfield(
-        name=_get_attr(elem, "id"),
+        name=name,
         description=_get_attr(elem, "description").strip(),
-        bit_offset=int(_get_attr(elem, "end")),
-        bit_width=int(_get_attr(elem, "width")),
+        bit_offset=bit_offset,
+        bit_width=bit_width,
         rw_access=rw_access_mapping[_get_attr(elem, "rwaccess")],
         reset_value=int(_get_attr(elem, "resetval"), base=16),
     )
@@ -60,11 +72,27 @@ def _parse_peripheral_instance(elem: et.Element, definition_name: str) -> Periph
     except ValueError:
         index = None
 
+    start_address = int(_get_attr(elem, "baseaddr"), base=16)
+    size = int(_get_attr(elem, "size"), base=16)
+
+    # Some random peripherals do not have "endaddr" e.g. CC26x4_JSTATE_2_NotVisible
+    try:
+        end_address = int(_get_attr(elem, "endaddr"), base=16)
+    except KeyError:
+        end_address = start_address + size - 1
+
+    if end_address - start_address != size - 1:
+        msg = (
+            f"Mismatch between start: {start_address:#010x}, end: {end_address:#010x}, "
+            f"and size: {size:#x} in {name}."
+        )
+        raise ValueError(msg)
+
     return PeripheralInstance(
         name=name,
         index=index,
-        address=int(_get_attr(elem, "baseaddr"), base=16),
-        size=int(_get_attr(elem, "size"), base=16),
+        address=start_address,
+        size=size,
     )
 
 
@@ -98,6 +126,11 @@ def parse_device(path: pathlib.Path) -> Device:
 
     instance_dict: defaultdict[pathlib.Path, list[et.Element]] = defaultdict(list)
     for instance in cpu_elem.iter("instance"):
+        # Certain instances are rather malformed and aren't required in onboard code.
+        # e.g. CC26x4_JSTATE_2_NotVisible. These are ignored.
+        if not _get_attr(instance, "id"):
+            continue
+
         instance_dict[pathlib.Path(_get_attr(instance, "href"))].append(instance)
 
     try:

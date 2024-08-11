@@ -2,6 +2,18 @@
 
 import dataclasses
 import enum
+from typing import Protocol
+
+
+class _HasName(Protocol):
+    @property
+    def name(self) -> str: ...
+
+
+def _assert_name(obj: _HasName) -> None:
+    if not obj.name:
+        msg = f"{obj.__class__.__name__} is missing name."
+        raise ValueError(msg)
 
 
 def _assert_positive(val: float, name: str, parent: str) -> None:
@@ -31,6 +43,8 @@ class RegisterBitfield:
 
     def __post_init__(self) -> None:
         """Post init."""
+        _assert_name(self)
+
         _assert_positive(self.bit_offset, "bit offset", self.name)
         _assert_positive(self.bit_width, "bit width", self.name)
         _assert_positive(self.reset_value, "reset value", self.name)
@@ -52,6 +66,8 @@ class Register:
 
     def __post_init__(self) -> None:
         """Post init."""
+        _assert_name(self)
+
         if self.bit_width not in [8, 16, 32, 64]:
             msg = f"Invalid bit width ({self.bit_width}) in {self.name}"
             raise ValueError(msg)
@@ -72,7 +88,7 @@ class Register:
             offset = bitfield.bit_offset + bitfield.bit_width
 
         if offset > self.bit_width:
-            msg = f"Bit width ({self.bit_width}) overflowed in {self.name}"
+            msg = f"Bit width ({offset}) overflowed in {self.name} ({self.bit_width})"
             raise ValueError(msg)
 
 
@@ -87,6 +103,8 @@ class PeripheralInstance:
 
     def __post_init__(self) -> None:
         """Post init."""
+        _assert_name(self)
+
         if self.index is not None:
             _assert_positive(self.index, "index", self.name)
         _assert_positive(self.address, "address", self.name)
@@ -104,6 +122,8 @@ class PeripheralDefinition:
 
     def __post_init__(self) -> None:
         """Post init."""
+        _assert_name(self)
+
         # Sort registers.
         # NOTE: registers addresses are allowed to overlap to support read vs. write aliases.
         self.registers.sort(key=lambda x: x.address_offset)
