@@ -29,3 +29,7 @@ ignore = [
   "ISC001",
   "ISC002",
 ]
+
+# Tests intentionally use the standard library unittest runner.
+[lint.per-file-ignores]
+"test/*_test.py" = ["D102", "PT009", "PT027"]

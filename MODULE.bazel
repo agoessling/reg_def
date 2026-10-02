@@ -3,6 +3,26 @@ module(
     version = "0.1.0",
 )
 
+bazel_dep(name = "rules_python", version = "1.5.1")
+
+bazel_dep(name = "rules_rust", version = "0.74.0", dev_dependency = True)
+
+python = use_extension("@rules_python//python/extensions:python.bzl", "python", dev_dependency = True)
+python.toolchain(python_version = "3.12")
+use_repo(python, "python_3_12")
+
+rust = use_extension("@rules_rust//rust:extensions.bzl", "rust", dev_dependency = True)
+rust.toolchain(
+    edition = "2024",
+    versions = ["1.90.0"],
+)
+use_repo(rust, "rust_toolchains")
+
+register_toolchains(
+    "@rust_toolchains//:all",
+    dev_dependency = True,
+)
+
 bazel_dep(name = "lint_it_all", version = "0.0.0", dev_dependency = True)
 git_override(
     module_name = "lint_it_all",
@@ -37,9 +57,9 @@ use_repo(llvm, "llvm_toolchain_llvm")
 lia_http_archive(
     name = "ruff",
     build_file_content = "exports_files(['ruff'])",
-    sha256 = "072370a5a3f72decdb0039a8c23c89a6982459fac128a368266d0b03933095ce",
-    strip_prefix = "ruff-i686-unknown-linux-gnu",
-    url = "https://github.com/astral-sh/ruff/releases/download/0.5.5/ruff-i686-unknown-linux-gnu.tar.gz",
+    sha256 = "718c12729718fedd4428c225eb73630afd89c417d46c1e665967d7032edb5277",
+    strip_prefix = "ruff-x86_64-unknown-linux-gnu",
+    url = "https://github.com/astral-sh/ruff/releases/download/0.5.5/ruff-x86_64-unknown-linux-gnu.tar.gz",
 )
 
 bazel_dep(name = "buildifier_prebuilt", version = "6.4.0", dev_dependency = True)

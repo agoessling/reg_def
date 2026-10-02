@@ -1,3 +1,5 @@
+exports_files(["defs.bzl"])
+
 # BEGIN ==================== lint_it_all ====================
 exports_files([
     ".clang-tidy",

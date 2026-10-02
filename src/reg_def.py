@@ -3,7 +3,7 @@
 import argparse
 import pathlib
 
-from src import c_generator, ti_parser
+from src import c_generator, rust_generator, ti_parser
 
 
 def main() -> None:
@@ -16,7 +16,9 @@ def main() -> None:
 
     definition_group.add_argument("--ti_xml", type=pathlib.Path, help="TI XML definition file.")
 
-    parser.add_argument("--output", required=True, type=pathlib.Path, help="Generated header file.")
+    parser.add_argument("--output", required=True, type=pathlib.Path, help="Generated source file.")
+
+    parser.add_argument("--language", choices=("c", "rust"), default="c")
 
     args = parser.parse_args()
 
@@ -25,7 +27,10 @@ def main() -> None:
     else:
         raise RuntimeError
 
-    c_generator.generate_header(args.output, device)
+    if args.language == "rust":
+        rust_generator.generate_source(args.output, device)
+    else:
+        c_generator.generate_header(args.output, device)
 
 
 if __name__ == "__main__":

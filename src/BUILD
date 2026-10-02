@@ -1,9 +1,12 @@
+load("@rules_python//python:defs.bzl", "py_binary", "py_library")
+
 py_binary(
     name = "reg_def",
     srcs = ["reg_def.py"],
     visibility = ["//visibility:public"],
     deps = [
         ":c_generator",
+        ":rust_generator",
         ":ti_parser",
     ],
 )
@@ -23,4 +26,12 @@ py_library(
 py_library(
     name = "device_types",
     srcs = ["device_types.py"],
+    visibility = ["//visibility:public"],
+)
+
+py_library(
+    name = "rust_generator",
+    srcs = ["rust_generator.py"],
+    visibility = ["//visibility:public"],
+    deps = [":device_types"],
 )
