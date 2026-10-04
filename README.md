@@ -9,20 +9,30 @@ Load the source-generation macro from the pinned Bzlmod dependency:
 
 ```starlark
 load("@reg_def//:defs.bzl", "rust_register_definition")
+load("@rules_rust//rust:defs.bzl", "rust_library")
 
 rust_register_definition(
     name = "device_registers",
     definition_file = "device.xml",
     data = [":peripheral_xml"],
+    standalone = True,
+)
+
+rust_library(
+    name = "registers",
+    srcs = [":device_registers"],
+    crate_root = ":device_registers",
 )
 ```
 
-This produces `device_registers.rs`. In the consuming `rust_library`, put the
-source target in `compile_data`, set a `rustc_env` entry to
-`"$(execpath :device_registers)"`, and use `include!(env!("DEVICE_REGISTERS"))`.
-The macro emits source rather than imposing a Rust crate structure or a Rust
-build-rule version on consumers. The command-line equivalent is
-`reg_def --language rust --ti_xml device.xml --output device_registers.rs`.
+This produces `device_registers.rs` with `#![no_std]`, ready to compile as a crate.
+The macro emits source without requiring a particular Rust build-rule version.
+The command-line equivalent is
+`reg_def --language rust --standalone --ti_xml device.xml --output device_registers.rs`.
+
+Omit `standalone` (the default) to emit definitions for `include!` inside an
+existing crate instead. In that case, declare the output in `compile_data` and
+provide its path through `rustc_env` for `include!(env!("DEVICE_REGISTERS"))`.
 
 The output supports `no_std` and Rust 2024. Register values are integer-backed
 snapshots with named field getters/setters and `from_bits()` / `bits()` methods.

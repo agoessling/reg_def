@@ -37,18 +37,19 @@ def register_definition(name, out, definition_type, definition_file, data = [], 
         **kwargs
     )
 
-def rust_register_definition(name, definition_file, data = [], out = None, **kwargs):
+def rust_register_definition(name, definition_file, data = [], out = None, standalone = False, **kwargs):
     """Generate a Rust source file containing layout-only register definitions.
 
-    The output can be included from a no_std Rust crate using compile_data and
-    rustc_env. This rule intentionally does not create a Rust library or require
-    consumers to use a particular rules_rust version.
+    With standalone=True, the output is a no_std crate root usable directly in
+    rust_library srcs. Otherwise it is suitable for include! in an existing crate.
+    This rule does not require consumers to use a particular rules_rust version.
 
     Args:
         name: Name of the generated source target.
         definition_file: TI device XML label.
         data: Peripheral XML files referenced by definition_file.
         out: Output filename; defaults to name + ".rs".
+        standalone: Emit #![no_std] for use as a standalone crate root.
         **kwargs: Other arguments passed to genrule, such as visibility.
     """
     generator = Label("//src:reg_def")
@@ -56,8 +57,9 @@ def rust_register_definition(name, definition_file, data = [], out = None, **kwa
         name = name,
         srcs = [definition_file] + data,
         outs = [out or name + ".rs"],
-        cmd = "$(execpath {}) --language rust --ti_xml $(execpath {}) --output $@".format(
+        cmd = "$(execpath {}) --language rust {} --ti_xml $(execpath {}) --output $@".format(
             generator,
+            "--standalone" if standalone else "",
             definition_file,
         ),
         tools = [generator],

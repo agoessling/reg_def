@@ -39,15 +39,24 @@ def device(registers: list[Register]) -> Device:
 class GeneratorTest(unittest.TestCase):
     """Exercise Rust source generation without accessing hardware."""
 
-    def generate(self, model: Device) -> str:
+    def generate(self, model: Device, *, standalone: bool = False) -> str:
         """Generate twice and check deterministic output."""
         with tempfile.TemporaryDirectory() as temporary:
             path = pathlib.Path(temporary) / "registers.rs"
-            generate_source(path, model)
+            generate_source(path, model, standalone=standalone)
             first = path.read_bytes()
-            generate_source(path, model)
+            generate_source(path, model, standalone=standalone)
             self.assertEqual(first, path.read_bytes())
             return first.decode()
+
+    def test_standalone_crate_preserves_definitions(self) -> None:
+        model = device([Register("DATA", "", 32, 0, [field("ALL", 0, 32)])])
+        included = self.generate(model)
+        standalone = self.generate(model, standalone=True)
+        self.assertNotIn("#![no_std]", included)
+        self.assertEqual(standalone.count("#![no_std]"), 1)
+        self.assertEqual(standalone.replace("#![no_std]\n", ""), included)
+        self.assertLess(standalone.index("#![no_std]"), standalone.index("pub mod"))
 
     def test_widths_and_full_width_masks(self) -> None:
         for width in (8, 16, 32, 64):

@@ -20,7 +20,13 @@ def main() -> None:
 
     parser.add_argument("--language", choices=("c", "rust"), default="c")
 
+    parser.add_argument(
+        "--standalone", action="store_true", help="Emit a standalone no_std Rust crate root."
+    )
+
     args = parser.parse_args()
+    if args.standalone and args.language != "rust":
+        parser.error("--standalone requires --language rust")
 
     if args.ti_xml:
         device = ti_parser.parse_device(args.ti_xml)
@@ -28,7 +34,7 @@ def main() -> None:
         raise RuntimeError
 
     if args.language == "rust":
-        rust_generator.generate_source(args.output, device)
+        rust_generator.generate_source(args.output, device, standalone=args.standalone)
     else:
         c_generator.generate_header(args.output, device)
 

@@ -57,13 +57,12 @@ rust_register_definition(
     name = "device_registers",
     data = ["//third_party/ti/targetdb:all_files"],
     definition_file = "//third_party/ti/targetdb:devices/cc1354p10.xml",
+    standalone = True,
 )
 
 rust_library(
     name = "device_rust",
-    srcs = ["device.rs"],
-    compile_data = [":device_registers"],
-    crate_root = "device.rs",
+    srcs = [":device_registers"],
+    crate_root = ":device_registers",
     edition = "2024",
-    rustc_env = {"DEVICE_REGISTERS": "$(execpath :device_registers)"},
 )
