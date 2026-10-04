@@ -34,6 +34,8 @@ Omit `standalone` (the default) to emit definitions for `include!` inside an
 existing crate instead. In that case, declare the output in `compile_data` and
 provide its path through `rustc_env` for `include!(env!("DEVICE_REGISTERS"))`.
 
+## Generated Rust API
+
 The output supports `no_std` and Rust 2024. Register values are integer-backed
 snapshots with named field getters/setters and `from_bits()` / `bits()` methods.
 Single-bit fields use `bool`; other fields use the register's integer width.
@@ -46,9 +48,51 @@ unsafe {
     let mut mode = GPT0.tamr.read();
     mode.set_taild(true);
     mode.set_tamr(2);
+    let timer_mode = mode.tamr(); // Extract the field, shifted down to bit zero.
     GPT0.tamr.write(mode);
 }
 ```
+
+### Local values and hardware access
+
+`read()` performs a volatile hardware read and returns a local `Value` snapshot.
+Field getters such as `tamr()` and setters such as `set_tamr(2)` operate only on
+that snapshot. `write(value)` performs a volatile hardware write. Changing a
+snapshot does not change hardware until it is explicitly written back.
+
+Field setters are not methods on the hardware register itself. Keeping the
+snapshot explicit lets a driver change several fields with one read and one
+write. It also makes those accesses visible: read-modify-write is not atomic,
+and it can be inappropriate for registers with read side effects or
+write-one-to-clear bits. Drivers should use documented set/clear aliases where
+appropriate rather than assume every register supports read-modify-write.
+
+The snapshot is an integer-backed value, not an allocation. Accessors request
+inlining; a local variable does not inherently require a stack slot. Inspect
+optimized target assembly when instruction count or access order matters.
+
+### Register-specific types
+
+Each register definition has a distinct `Value` type, and its `write()` accepts
+only that type. A value read from `GPT0.tamr` cannot be passed directly to
+`GPT0.tctl.write()`, even when both registers have the same width. Copying a
+snapshot or changing its fields preserves its type.
+
+Types distinguish register definitions, not physical peripheral instances.
+Instances of the same peripheral definition share their register value types,
+so equivalent registers on those instances can use the same configuration.
+`OtherValue::from_bits(value.bits())` explicitly converts through the underlying
+integer; it bypasses this distinction and does not validate hardware semantics.
+
+### Why fields use methods
+
+Rust has no native C-style bitfields. A field occupying a few bits has no
+independent byte address, so a normal mutable pointer or reference cannot expose
+just those bits. Returning a reference to the containing integer would expose
+neighboring fields as well. Getters and setters implement the necessary masks
+and shifts explicitly; `#[repr(packed)]` would not provide bitfield access.
+
+### Safety boundary
 
 `Register` and `Peripheral` describe addresses, not ownership. Raw reads and
 writes are explicitly unsafe volatile operations of the XML-specified width.
@@ -57,6 +101,11 @@ values, read/write side effects, synchronization, and exclusive peripheral use.
 In particular, read-modify-write is not appropriate for every register. The
 backend deliberately does not infer such behavior from XML access annotations
 or produce Rust references into MMIO.
+
+Both read and write methods are generated regardless of XML access annotations;
+reserved fields can also have accessors. Their presence is not permission to use
+them. Field setters enforce bit placement, not valid encodings or peripheral
+state transitions. A safe application-facing driver must enforce those contracts.
 
 ## Validation
 
