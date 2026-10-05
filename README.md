@@ -84,6 +84,21 @@ so equivalent registers on those instances can use the same configuration.
 `OtherValue::from_bits(value.bits())` explicitly converts through the underlying
 integer; it bypasses this distinction and does not validate hardware semantics.
 
+For concise raw writes, each `Value` also implements `From` for its exact
+underlying integer type (`u8`, `u16`, `u32`, or `u64`). The destination register
+supplies the expected value type:
+
+```rust
+// Same access requirements as any other raw register write.
+unsafe { GPT0.tamr.write(2_u32.into()); }
+```
+
+This preserves every bit, exactly like `from_bits()`, without validating field
+encodings. It does not convert between different registers' value types or
+silently narrow wider integers. `write()` still accepts its specific `Value`,
+not a generic conversion argument. Use named field setters when they explain
+control bits more clearly; retain `from_bits()` for constant expressions.
+
 ### Why fields use methods
 
 Rust has no native C-style bitfields. A field occupying a few bits has no
@@ -110,8 +125,10 @@ state transitions. A safe application-facing driver must enforce those contracts
 ## Validation
 
 Bazel 7.7.1 downloads Python 3.12 and Rust 1.90.0 for the generator and tests.
-Run `bazel test //test:generator_test //test:generated_test` and
+Run `bazel test //test:generator_test //test:generated_test //test:type_safety_test` and
 `bazel build //test:test_main //test:device_rust`. The Python regressions cover deterministic
 output, widths, aliases, identifiers, and invalid fields. Executable Rust tests
-cover bit preservation, truncation, full-width fields, addresses, and value sizes.
+cover bit preservation, truncation, integer conversions, full-width fields,
+addresses, and value sizes. Compile-fail examples verify that writes reject
+other registers' values and narrowing conversions.
 The existing C integration target still builds the full CC1354P10 description.

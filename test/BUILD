@@ -1,5 +1,5 @@
 load("@rules_python//python:defs.bzl", "py_binary", "py_test")
-load("@rules_rust//rust:defs.bzl", "rust_library", "rust_test")
+load("@rules_rust//rust:defs.bzl", "rust_doc_test", "rust_library", "rust_test")
 load("//:defs.bzl", "register_definition", "rust_register_definition")
 
 register_definition(
@@ -43,14 +43,33 @@ genrule(
     tools = [":fixture_generator"],
 )
 
+rust_library(
+    name = "fixture_api",
+    testonly = True,
+    srcs = [":fixture"],
+    crate_root = ":fixture",
+    edition = "2024",
+)
+
+rust_library(
+    name = "generated_examples",
+    testonly = True,
+    srcs = ["generated_test.rs"],
+    crate_root = "generated_test.rs",
+    edition = "2024",
+    deps = [":fixture_api"],
+)
+
 rust_test(
     name = "generated_test",
     size = "small",
-    srcs = ["generated_test.rs"],
-    compile_data = [":fixture"],
-    crate_root = "generated_test.rs",
-    edition = "2024",
-    rustc_env = {"REGISTER_FIXTURE": "$(execpath :fixture)"},
+    crate = ":generated_examples",
+)
+
+rust_doc_test(
+    name = "type_safety_test",
+    size = "small",
+    crate = ":generated_examples",
 )
 
 rust_register_definition(

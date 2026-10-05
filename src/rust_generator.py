@@ -85,6 +85,11 @@ def _register(register: Register) -> list[str]:
         ]
     result += [
         "    }",
+        f"    impl From<{integer}> for Value {{",
+        "        /// Wrap raw bits without validating hardware-specific encodings.",
+        "        #[inline(always)]",
+        f"        fn from(bits: {integer}) -> Self {{ Self::from_bits(bits) }}",
+        "    }",
         "    /// Raw address descriptor; does not confer peripheral ownership.",
         "    #[derive(Clone, Copy)]",
         "    pub struct Register { address: usize }",
