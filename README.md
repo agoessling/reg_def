@@ -146,3 +146,9 @@ cover bit preservation, truncation, integer conversions, full-width fields,
 addresses, and value sizes. Compile-fail examples verify that writes reject
 other registers' values and narrowing conversions.
 The existing C integration target still builds the full CC1354P10 description.
+Check the full device's generated documentation with Clippy as well:
+
+```sh
+bazel build --aspects=@rules_rust//rust:defs.bzl%rust_clippy_aspect \
+  --output_groups=+clippy_checks //test:device_rust
+```

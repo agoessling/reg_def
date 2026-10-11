@@ -38,7 +38,9 @@ def _unique(names: list[str], context: str) -> None:
 
 def _xml_text(description: str) -> str:
     # XML prose is not Markdown: preserve bit ranges, comparisons, and code as literal text.
-    return re.sub(r"([\\`*_\[\]#|])", r"\\\1", html.escape(description, quote=False))
+    escaped = re.sub(r"([\\`*_\[\]#|+\-])", r"\\\1", html.escape(description, quote=False))
+    # Wrapping can move an inline list marker to the beginning of a Markdown line.
+    return re.sub(r"\b(\d+)([.)])(?=\s)", r"\1\\\2", escaped)
 
 
 def _doc(description: str, indent: str = "") -> list[str]:

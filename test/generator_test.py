@@ -111,6 +111,15 @@ class GeneratorTest(unittest.TestCase):
         self.assertIn("0x40000000", self.docs(source, "pub const TEST0:"))
         self.assertIn("# Safety", self.docs(source, "pub unsafe fn write("))
 
+    def test_wrapping_xml_prose_does_not_create_markdown_lists(self) -> None:
+        description = "Configuration. " * 8 + "- First item. + Second item. 1. Third. 2) Fourth."
+        source = self.generate(device([Register("DATA", description, 32, 0, [])]))
+        self.assertIn(r"\- First item.", source)
+        self.assertIn(r"\+ Second item.", source)
+        self.assertIn(r"1\. Third.", source)
+        self.assertIn(r"2\) Fourth.", source)
+        self.assertNotRegex(source, r"(?m)^\s*/// (?:[-+] |\d+[.)] )")
+
     def test_documentation_does_not_change_generated_operations(self) -> None:
         model = self.xml_model()
         source = self.generate(model)
