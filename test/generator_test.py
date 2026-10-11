@@ -81,16 +81,16 @@ class GeneratorTest(unittest.TestCase):
         for declaration in ("pub const fn direction(", "pub fn set_direction("):
             docs = self.docs(source, declaration)
             self.assertIn("Count direction.", docs)
-            self.assertIn("Bit 4; XML access: RW; reset: `0x0`", docs)
+            self.assertIn("Bit 4; Access: RW; reset: `0x0`", docs)
             self.assertIn("`0x1 (true)` — UP: Count up from zero.", docs)
             self.assertIn("`0x0 (false)` — DOWN: Count down.", docs)
             self.assertIn("local snapshot", docs)
         for declaration in ("pub const fn match_(", "pub fn set_match_("):
             docs = self.docs(source, declaration)
-            self.assertIn("Bits 7:5; XML access: RO; reset: `0x2`", docs)
+            self.assertIn("Bits 7:5; Access: RO; reset: `0x2`", docs)
             self.assertIn(r"Match \[7:5\] when x &lt; y; do not dereference \*ptr.", docs)
             self.assertIn("outside field width in XML", docs)
-        self.assertIn("XML access: WO", self.docs(source, "pub fn set_clear("))
+        self.assertIn("Access: WO", self.docs(source, "pub fn set_clear("))
         self.assertIn("truncated", self.docs(source, "pub fn set_match_("))
 
     def test_hover_docs_on_registers_and_peripherals(self) -> None:

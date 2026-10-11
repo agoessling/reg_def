@@ -75,7 +75,7 @@ def _field_doc(field: RegisterBitfield) -> str:
     )
     result = (
         f"{_xml_text(field.description)}\n\n"
-        f"{location}; XML access: {field.rw_access.name}; reset: `{field.reset_value:#x}`."
+        f"{location}; Access: {field.rw_access.name}; reset: `{field.reset_value:#x}`."
     ).strip()
     if field.named_values:
         result += "\n\nValues:\n"
