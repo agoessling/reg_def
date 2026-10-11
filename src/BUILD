@@ -14,6 +14,7 @@ py_binary(
 py_library(
     name = "ti_parser",
     srcs = ["ti_parser.py"],
+    visibility = ["//test:__pkg__"],
     deps = [":device_types"],
 )
 

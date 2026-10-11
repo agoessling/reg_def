@@ -31,6 +31,15 @@ class RwAccess(enum.Enum):
 
 
 @dataclasses.dataclass(frozen=True)
+class BitfieldValue:
+    """A named XML encoding; documentation, not a guarantee of a valid hardware value."""
+
+    name: str
+    value: int
+    description: str
+
+
+@dataclasses.dataclass(frozen=True)
 class RegisterBitfield:
     """Register Bitfield."""
 
@@ -40,6 +49,7 @@ class RegisterBitfield:
     bit_width: int
     rw_access: RwAccess
     reset_value: int
+    named_values: tuple[BitfieldValue, ...] = ()
 
     def __post_init__(self) -> None:
         """Post init."""

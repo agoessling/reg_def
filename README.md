@@ -122,12 +122,26 @@ reserved fields can also have accessors. Their presence is not permission to use
 them. Field setters enforce bit placement, not valid encodings or peripheral
 state transitions. A safe application-facing driver must enforce those contracts.
 
+### Editor hover documentation
+
+Generated Rust doc comments expose XML descriptions on peripheral instances, register fields,
+register/value types, reads/writes, and field getters/setters. Rust-analyzer displays these in
+editor hover (for example, Neovim's `K`). Register documentation includes its offset and width;
+field documentation includes its bit position, XML access mode, reset value, and named `bitenum`
+encodings. Boolean fields show the corresponding `true`/`false` values.
+
+Named encodings are documentation, not generated Rust enums or validation rules. XML values
+outside their field width are retained and marked as such. Missing value descriptions fall back
+to the XML `token` attribute. XML prose is escaped as literal Markdown text, preserving bit ranges
+and comparisons in hover. The C backend and Rust register operations are unchanged.
+
 ## Validation
 
 Bazel 7.7.1 downloads Python 3.12 and Rust 1.90.0 for the generator and tests.
 Run `bazel test //test:generator_test //test:generated_test //test:type_safety_test` and
 `bazel build //test:test_main //test:device_rust`. The Python regressions cover deterministic
-output, widths, aliases, identifiers, and invalid fields. Executable Rust tests
+output, widths, aliases, identifiers, invalid fields, XML named values, and attached hover docs.
+Executable Rust tests
 cover bit preservation, truncation, integer conversions, full-width fields,
 addresses, and value sizes. Compile-fail examples verify that writes reject
 other registers' values and narrowing conversions.

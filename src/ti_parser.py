@@ -5,6 +5,7 @@ import xml.etree.ElementTree as et
 from collections import defaultdict
 
 from src.device_types import (
+    BitfieldValue,
     Device,
     PeripheralDefinition,
     PeripheralInstance,
@@ -51,6 +52,17 @@ def _parse_register_bitfield(elem: et.Element) -> RegisterBitfield:
         bit_width=bit_width,
         rw_access=rw_access_mapping[_get_attr(elem, "rwaccess")],
         reset_value=int(_get_attr(elem, "resetval"), base=16),
+        named_values=tuple(
+            BitfieldValue(
+                name=_get_attr(value, "id"),
+                value=int(
+                    _get_attr(value, "value"),
+                    16 if _get_attr(value, "value").lower().startswith("0x") else 10,
+                ),
+                description=(value.get("description") or value.get("token") or "").strip(),
+            )
+            for value in elem.findall("bitenum")
+        ),
     )
 
 

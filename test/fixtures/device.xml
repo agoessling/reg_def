@@ -1,0 +1,5 @@
+<device partnum="HOVER_TEST">
+  <cpu id="CPU">
+    <instance id="TEST0" href="test.xml" baseaddr="0x40000000" size="0x1000" />
+  </cpu>
+</device>

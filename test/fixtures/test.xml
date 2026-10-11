@@ -1,0 +1,14 @@
+<module id="TEST" description="Test peripheral.">
+  <register id="MODE" description="Timer mode &amp; control for &lt;channel&gt;." width="32" offset="0x4">
+    <bitfield id="DIRECTION" description="Count direction." begin="4" end="4" width="1" rwaccess="RW" resetval="0x0">
+      <bitenum id="UP" value="1" description="Count up from zero." />
+      <bitenum id="DOWN" value="0" token="Count down." />
+    </bitfield>
+    <bitfield id="MATCH" description="Match [7:5] when x &lt; y; do not dereference *ptr." begin="7" end="5" width="3" rwaccess="RO" resetval="0x2">
+      <bitenum id="ZERO" value="00" description="Match zero." />
+      <bitenum id="TWO" value="0x2" description="Match two." />
+      <bitenum id="BAD_XML" value="8" description="Outside the declared width." />
+    </bitfield>
+    <bitfield id="CLEAR" description="Clear pending state." begin="8" end="8" width="1" rwaccess="WO" resetval="0x0" />
+  </register>
+</module>

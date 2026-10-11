@@ -20,9 +20,11 @@ py_test(
     name = "generator_test",
     size = "small",
     srcs = ["generator_test.py"],
+    data = glob(["fixtures/*.xml"]),
     deps = [
         "//src:device_types",
         "//src:rust_generator",
+        "//src:ti_parser",
     ],
 )
 
