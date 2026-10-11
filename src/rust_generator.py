@@ -78,7 +78,7 @@ def _field_doc(field: RegisterBitfield) -> str:
         f"{location}; XML access: {field.rw_access.name}; reset: `{field.reset_value:#x}`."
     ).strip()
     if field.named_values:
-        result += "\n\nXML values:\n"
+        result += "\n\nValues:\n"
         for value in field.named_values:
             encoding = f"{value.value:#x}"
             if field.bit_width == 1 and value.value in (0, 1):
